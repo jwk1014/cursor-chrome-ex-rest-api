@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "REST API 호출/응답 관리 프로그램",
+  "version": "1.0.0",
+  "description": "REST API 요청/응답을 관리하고 기록을 저장하는 Chrome Extension",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_title": "REST API 관리자"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+} 
