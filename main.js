@@ -99,6 +99,34 @@ function initializeEventListeners() {
             removeKeyValuePair(e.target);
         }
     });
+
+    // 목록(저장/기록) 리스트에 이벤트 위임 (로드/삭제)
+    elements.savedRequestsList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-secondary')) {
+            const itemDiv = e.target.closest('.list-item');
+            if (!itemDiv) return;
+            const index = parseInt(itemDiv.dataset.index, 10);
+            const type = itemDiv.dataset.type;
+            if (e.target.textContent.includes('로드')) {
+                loadItem(index, type);
+            } else if (e.target.textContent.includes('삭제')) {
+                deleteItem(index, type);
+            }
+        }
+    });
+    elements.historyList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-secondary')) {
+            const itemDiv = e.target.closest('.list-item');
+            if (!itemDiv) return;
+            const index = parseInt(itemDiv.dataset.index, 10);
+            const type = itemDiv.dataset.type;
+            if (e.target.textContent.includes('로드')) {
+                loadItem(index, type);
+            } else if (e.target.textContent.includes('삭제')) {
+                deleteItem(index, type);
+            }
+        }
+    });
 }
 
 // 탭 전환
@@ -114,6 +142,19 @@ function switchTab(tabName) {
     elements.tabContents.forEach(content => {
         content.classList.toggle('active', content.id === tabName);
     });
+
+    // 호출 기록 탭 클릭 시 최신 데이터 로드 및 렌더링
+    if (tabName === 'history') {
+        loadData().then(() => {
+            renderHistory();
+        });
+    }
+    // 저장된 요청 탭 클릭 시 최신 데이터 로드 및 렌더링
+    if (tabName === 'saved-requests') {
+        loadData().then(() => {
+            renderSavedRequests();
+        });
+    }
 }
 
 // 작은 탭 전환
@@ -255,8 +296,8 @@ function createListItem(item, index, type) {
         <div class="list-item-title">${title}</div>
         <div class="list-item-details">${details}</div>
         <div class="list-item-actions">
-            <button class="btn-secondary" onclick="loadItem(${index}, '${type}')">로드</button>
-            <button class="btn-secondary" onclick="deleteItem(${index}, '${type}')">삭제</button>
+            <button class="btn-secondary">로드</button>
+            <button class="btn-secondary">삭제</button>
         </div>
     `;
     
@@ -547,11 +588,14 @@ async function makeRequest(requestData) {
     // Body 추가 (GET 요청이 아닌 경우)
     if (requestData.method !== 'GET' && requestData.body) {
         if (requestData.contentType === 'application/json') {
+            // JSON 유효성 검사만 하고, fetch에는 문자열 그대로 전달
             try {
-                options.body = JSON.parse(requestData.body);
+                JSON.parse(requestData.body);
             } catch {
-                options.body = requestData.body;
+                alert('유효한 JSON 형식이 아닙니다.');
+                throw new Error('Invalid JSON');
             }
+            options.body = requestData.body;
         } else if (requestData.contentType === 'application/x-www-form-urlencoded') {
             options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
             options.body = requestData.body;
@@ -619,6 +663,22 @@ function displayResponse(response, time) {
     
     // 상태 코드에 따른 클래스 추가
     elements.statusCode.className = 'status-code ' + getStatusClass(response.statusCode);
+
+    // 응답 탭(Body/Headers)만 전환 (요청 입력 탭은 건드리지 않음)
+    document.querySelectorAll('.tabs-small').forEach(tabs => {
+        // 응답 탭 그룹만 처리
+        if (tabs.querySelector('[data-tab="response-body"]')) {
+            tabs.querySelectorAll('.tab-btn-small').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === 'response-body');
+            });
+        }
+    });
+    document.querySelectorAll('.tab-content-small').forEach(content => {
+        // 응답 탭 그룹만 처리
+        if (content.id === 'response-body' || content.id === 'response-headers') {
+            content.classList.toggle('active', content.id === 'response-body');
+        }
+    });
 }
 
 // 응답 본문 포맷팅
